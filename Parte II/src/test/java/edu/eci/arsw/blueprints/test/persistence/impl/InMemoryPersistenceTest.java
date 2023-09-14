@@ -10,17 +10,44 @@ import edu.eci.arsw.blueprints.model.Point;
 import edu.eci.arsw.blueprints.persistence.BlueprintNotFoundException;
 import edu.eci.arsw.blueprints.persistence.BlueprintPersistenceException;
 import edu.eci.arsw.blueprints.persistence.impl.InMemoryBlueprintPersistence;
+
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+
 import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  *
  * @author hcadavid
  */
 public class InMemoryPersistenceTest {
-    
+
+    private InMemoryBlueprintPersistence persistence;
+
+    @BeforeEach
+    public void setUp() throws BlueprintPersistenceException {
+        persistence = new InMemoryBlueprintPersistence();
+        Point[] pts_ = new Point[]{new Point(140, 140), new Point(115, 115)};
+        Blueprint bp_ = new Blueprint("_authorname_", "_bpname_", pts_);
+        persistence.saveBlueprint(bp_);
+
+        Point[] pts1 = new Point[]{new Point(140, 140), new Point(115, 115)};
+        Blueprint bp1 = new Blueprint("author1", "bp1", pts1);
+        persistence.saveBlueprint(bp1);
+
+        Point[] pts2 = new Point[]{new Point(100, 100), new Point(90, 90)};
+        Blueprint bp2 = new Blueprint("author1", "bp2", pts2);
+        persistence.saveBlueprint(bp2);
+
+        Point[] pts3 = new Point[]{new Point(200, 200), new Point(180, 180)};
+        Blueprint bp3 = new Blueprint("author2", "bp3", pts3);
+        persistence.saveBlueprint(bp3);
+    }
+
     @Test
     public void saveNewAndLoadTest() throws BlueprintPersistenceException, BlueprintNotFoundException{
         InMemoryBlueprintPersistence ibpp=new InMemoryBlueprintPersistence();
@@ -65,10 +92,45 @@ public class InMemoryPersistenceTest {
         catch (BlueprintPersistenceException ex){
             
         }
-                
-        
+    }
+
+    @Test
+    public void getExistingBlueprint() throws BlueprintNotFoundException, BlueprintPersistenceException {
+        setUp();
+        Blueprint retrievedBlueprint = persistence.getBlueprint("_authorname_", "_bpname_");
+        assertNotNull(retrievedBlueprint);
+        assertEquals("_authorname_", retrievedBlueprint.getAuthor());
+        assertEquals("_bpname_", retrievedBlueprint.getName());
+    }
+
+    @Test
+    public void getNonExistingBlueprint() throws BlueprintPersistenceException {
+        setUp();
+        assertThrows(BlueprintNotFoundException.class, () -> {
+            persistence.getBlueprint("_nonexistent_author_", "_nonexistent_bpname_");
+        });
+    }
+
+    @Test
+    public void getExistingBlueprintByAuthor() throws BlueprintNotFoundException, BlueprintPersistenceException {
+        setUp();
+        Set<Blueprint> blueprintsByAuthor1 = persistence.getBlueprintsByAuthor("author1");
+        assertNotNull(blueprintsByAuthor1);
+        assertEquals(2, blueprintsByAuthor1.size());
+
+        Set<Blueprint> blueprintsByAuthor2 = persistence.getBlueprintsByAuthor("author2");
+        assertNotNull(blueprintsByAuthor2);
+        assertEquals(1, blueprintsByAuthor2.size());
+    }
+
+    @Test
+    public void getExistingBlueprintByNonExistingAuthor() throws BlueprintPersistenceException {
+        setUp();
+        assertThrows(BlueprintNotFoundException.class, () -> {
+            persistence.getBlueprintsByAuthor("_nonexistent_author_");
+        });
     }
 
 
-    
+
 }
